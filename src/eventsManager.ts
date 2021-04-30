@@ -44,7 +44,7 @@ class EventsManager {
    * This is call with an interval initialized on EventsManager.init()
    * @see EventsManager.init()
    */
-  private sendPastEvents = (): void => {
+  public sendPastEvents = (): void => {
     this.events = this.events.filter((e: TurbulentEvent): boolean => {
       const isPast: boolean = e.isPast();
       if (isPast) {
@@ -70,7 +70,7 @@ class EventsManager {
   /**
    * Adding a new event
    */
-  addEvent(event: TurbulentEvent) {
+  public addEvent(event: TurbulentEvent) {
     this.events.push(event);
     this.save();
   }
@@ -78,8 +78,23 @@ class EventsManager {
   /**
    * Get all event as array
    */
-  getAll(): Array<TurbulentEvent> {
+  public getAll(): Array<TurbulentEvent> {
     return this.events;
+  }
+
+  /**
+   * Get all event as array
+   */
+  public clear(): void {
+    this.events = [];
+    this.save();
+  }
+
+  /**
+   * Stop the watcher
+   */
+  public stop(): void {
+    clearInterval(this.interval);
   }
 }
 
