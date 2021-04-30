@@ -1,0 +1,19 @@
+{
+  "name": "entry_test",
+  "version": "1.0.0",
+  "description": "Entry test for turbulent NodeJS Job",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsc && node dist/app.js"
+  },
+  "author": "Téo Balisson",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/websocket": "^1.0.2",
+    "tslint": "^5.20.1",
+    "typescript": "^3.9.9"
+  },
+  "dependencies": {
+    "websocket": "^1.0.34"
+  }
+}
