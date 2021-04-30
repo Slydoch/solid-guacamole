@@ -8,11 +8,12 @@ class Client {
     this._ws = ws;
   }
 
-  getId(): Number {
+
+  public getId(): Number {
     return this._id;
   }
 
-  sendMessage(message: String): void {
+  public sendMessage(message: string): void {
     this._ws.send(message);
   }
 }

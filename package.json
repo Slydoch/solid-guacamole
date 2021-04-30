@@ -19,7 +19,6 @@
     "typescript": "^3.9.9"
   },
   "dependencies": {
-    "express": "^4.17.1",
     "lodash": "^4.17.21",
     "mongodb": "^3.6.6",
     "ws": "^7.4.5"
