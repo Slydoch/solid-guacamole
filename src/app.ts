@@ -1,58 +1,52 @@
-import dotenv from 'dotenv';
+import dotenv from 'dotenv-flow';
 import * as http from 'http';
 import * as WebSocket from 'ws';
-import _ from 'lodash';
 import assert from 'assert';
 import Client from './entities/client';
 import EventsManager from './eventsManager';
 import TurbulentEvent from './entities/turbulentEvent';
-
+import ClientsManager from './clientsManager';
 dotenv.config();
-let clients = [];
-let clientId = 0;
 
 const server = http.createServer();
 const wss = new WebSocket.Server({ server });
-
+const clientsManager = new ClientsManager();
 const eventsManager = new EventsManager((event: TurbulentEvent) => {
   // This is the callback to send a message to all connected clients
-  clients.forEach((client: Client) => {
-    client.sendMessage(`${JSON.stringify(event.asJSONObject())}`);
+  clientsManager.getAll().forEach((client: Client) => {
+    client.sendMessage(JSON.stringify({
+      ...event.asJSONObject(),
+      action: "event"
+    }));
   });
 });
 
 wss.on('connection', (ws: WebSocket, request: http.ClientRequest) => {
-  const client = new Client(++clientId, ws);
-  clients.push(client);
+  const client = clientsManager.addClient(ws);
   ws.on('message', (message: string) => {
     // Somebody is trying to talk ?
     try {
-      console.log(message);
       const parsedMessage = JSON.parse(message);
-      console.log(parsedMessage);
       assert.notStrictEqual(parsedMessage.action, null);
       assert.notStrictEqual(parsedMessage.action, undefined);
-      switch(parsedMessage.action) {
+      switch (parsedMessage.action) {
         case "add_event":
-          eventsManager.addEvent(new TurbulentEvent(
-            parsedMessage.name,
-            new Date(parsedMessage.date)
-          ));
-        break;
+          eventsManager.addEvent(parsedMessage.name, parsedMessage.date);
+          break;
         case "say":
-          clients.forEach((client: Client) => {
-            client.sendMessage(parsedMessage.message);
+          clientsManager.getAll().forEach((client: Client) => {
+            client.sendMessage(JSON.stringify({
+              action: "message",
+              message: parsedMessage.message
+            }));
           });
-        break;
+          break;
       }
     } catch (e) {
     }
   });
   ws.on('close', () => {
-    // bye faithful client, It was a good time
-    _.remove(clients, function (c: Client) {
-      return c.getId() == client.getId();
-    });
+    clientsManager.removeClient(client);
   });
   // Hello new client :)
   ws.send("Hello");

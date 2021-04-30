@@ -1,6 +1,6 @@
 
+import assert from 'assert';
 import fs from 'fs';
-import { isFunction } from 'lodash';
 import path from 'path';
 
 import TurbulentEvent from "./entities/turbulentEvent";
@@ -14,7 +14,7 @@ class EventsManager {
   private interval: NodeJS.Timeout;
   private callback: Function;
 
-  constructor(callback) {
+  constructor(callback: Function) {
     this.callback = callback;
     this.init();
   }
@@ -25,7 +25,7 @@ class EventsManager {
    * This may be better to use any database storage for a live application
    * Also clean old event
    */
-  init(): void {
+  private init(): void {
     this.fileName = path.join(__dirname, '..', process.env.DATA_DIRECTORY, "/events.json");
     if (!fs.existsSync(this.fileName)) {
       fs.writeFileSync(this.fileName, "[]");
@@ -36,24 +36,6 @@ class EventsManager {
       return TurbulentEvent.FromJSON(e);
     });
     this.interval = setInterval(this.sendPastEvents, 5000);
-  }
-
-  /**
-   * Foreach event, if it's past, send a message to all connected clients
-   * and remove it from the array
-   * This is call with an interval initialized on EventsManager.init()
-   * @see EventsManager.init()
-   */
-  public sendPastEvents = (): void => {
-    this.events = this.events.filter((e: TurbulentEvent): boolean => {
-      const isPast: boolean = e.isPast();
-      if (isPast) {
-        // Event is sent here
-        this.callback(e);
-      }
-      return !isPast;
-    });
-    this.save();
   }
 
   /**
@@ -68,15 +50,63 @@ class EventsManager {
   }
 
   /**
-   * Adding a new event
+   * Foreach event, if it's past, send a message to all connected clients
+   * and remove it from the array
+   * This is call with an interval initialized on EventsManager.init()
+   * @see EventsManager.init()
    */
-  public addEvent(event: TurbulentEvent) {
-    this.events.push(event);
-    this.save();
+  public sendPastEvents = (): void => {
+    let hasEventSent = false;
+    this.events = this.events.filter((e: TurbulentEvent): boolean => {
+      const isPast: boolean = e.isPast();
+      if (isPast) {
+        // Event is sent here
+        hasEventSent = true;
+        this.callback(e);
+      }
+      return !isPast;
+    });
+    if (hasEventSent) {
+      this.save();
+    }
+  }
+
+  /**
+   * Adding a new event
+   * @param name The event name
+   * @param date The datetime of the event as ISO string
+   * @returns true if it has been added
+   */
+  public addEvent(name: string, date: string): boolean {
+    try {
+      assert.notStrictEqual(name, "");
+      assert.notStrictEqual(name, null);
+      assert.notStrictEqual(name, undefined);
+      assert.notStrictEqual(date, "");
+      assert.notStrictEqual(date, null);
+      assert.notStrictEqual(date, undefined);
+      assert.notStrictEqual(this.assertISODate(date), false);
+      this.events.push(new TurbulentEvent(name, new Date(date)));
+      this.save();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  /**
+   * Test if a string date is ISO
+   * @param str The date as a string
+   * @returns If the date is correct ISO format (ex: 2012-04-30T18:14:00.000Z)
+   */
+  public assertISODate(str: string): boolean {
+    if (!/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/.test(str)) return false;
+    var d = new Date(str);
+    return d.toISOString() === str;
   }
 
   /**
    * Get all event as array
+   * @returns all events
    */
   public getAll(): Array<TurbulentEvent> {
     return this.events;
